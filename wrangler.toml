@@ -5,5 +5,5 @@ pages_build_output_dir = "build"
 [env.production]
 name = "fitsync-frontend-prod"
 
-[env.development]
+[env.preview]
 name = "fitsync-frontend-dev"
