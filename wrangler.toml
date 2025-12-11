@@ -1,0 +1,9 @@
+name = "fitsync-frontend"
+compatibility_date = "2024-12-11"
+pages_build_output_dir = "build"
+
+[env.production]
+name = "fitsync-frontend-prod"
+
+[env.preview]
+name = "fitsync-frontend-dev"
