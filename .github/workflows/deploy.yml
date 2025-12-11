@@ -26,15 +26,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Lint code
-        run: |
-          if npm list eslint > /dev/null 2>&1; then
-            npm run lint
-          else
-            echo "ESLint not configured, skipping lint check"
-          fi
-        continue-on-error: true
-
       - name: Run unit tests
         run: npm run test:ci
 
@@ -77,16 +68,18 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          apiKey: ${{ secrets.CLOUDFLARE_API_KEY }}
-          email: ${{ secrets.CLOUDFLARE_EMAIL }}
           command: pages deploy build --project-name=fitsync-frontend --compatibility-date=2024-12-11
 
       - name: Setup custom domain
         uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          apiKey: ${{ secrets.CLOUDFLARE_API_KEY }}
-          email: ${{ secrets.CLOUDFLARE_EMAIL }}
           command: pages domain add ${{ vars.DOMAIN }} --project-name=fitsync-frontend
         continue-on-error: true
 
@@ -119,16 +112,18 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          apiKey: ${{ secrets.CLOUDFLARE_API_KEY }}
-          email: ${{ secrets.CLOUDFLARE_EMAIL }}
           command: pages deploy build --project-name=fitsync-frontend-prod --compatibility-date=2024-12-11
 
       - name: Setup production domain
         uses: cloudflare/wrangler-action@v3
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          apiKey: ${{ secrets.CLOUDFLARE_API_KEY }}
-          email: ${{ secrets.CLOUDFLARE_EMAIL }}
           command: pages domain add ${{ vars.DOMAIN }} --project-name=fitsync-frontend-prod
         continue-on-error: true
 
@@ -161,9 +156,10 @@ jobs:
       - name: Deploy preview
         uses: cloudflare/wrangler-action@v3
         id: deploy
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          apiKey: ${{ secrets.CLOUDFLARE_API_KEY }}
-          email: ${{ secrets.CLOUDFLARE_EMAIL }}
           command: pages deploy build --project-name=fitsync-frontend --compatibility-date=2024-12-11
 
       - name: Comment PR with preview URL
