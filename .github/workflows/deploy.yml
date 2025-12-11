@@ -149,12 +149,18 @@ jobs:
         with:
           command: pages deploy build --project-name=fitsync-frontend --commit-dirty=true
 
+      - name: Extract deployment URL
+        id: extract-url
+        run: |
+          # Extract the deployment URL from the previous step's output
+          DEPLOY_URL=$(echo "${{ steps.deploy.outputs.command-output }}" | grep -o 'https://[a-z0-9]*\.fitsync-frontend\.pages\.dev' | head -1)
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
         with:
           script: |
-            const sha = context.payload.pull_request.head.sha.substring(0, 8);
-            const previewUrl = `https://${sha}.fitsync-frontend.pages.dev`;
+            const previewUrl = "${{ steps.extract-url.outputs.url }}";
             
             const comment = `🚀 **Preview Deployment Ready!**
             
