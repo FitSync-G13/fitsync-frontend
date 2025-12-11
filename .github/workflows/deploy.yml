@@ -80,7 +80,7 @@ jobs:
           CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
           CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          command: pages domain add ${{ vars.DOMAIN }} --project-name=fitsync-frontend
+          command: pages project domain add fitsync-frontend ${{ vars.DOMAIN }}
         continue-on-error: true
 
   build-and-deploy-prod:
@@ -124,7 +124,7 @@ jobs:
           CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
           CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
         with:
-          command: pages domain add ${{ vars.DOMAIN }} --project-name=fitsync-frontend-prod
+          command: pages project domain add fitsync-frontend-prod ${{ vars.DOMAIN }}
         continue-on-error: true
 
   deploy-preview:
