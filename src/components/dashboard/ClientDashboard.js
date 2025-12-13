@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
     Dumbbell,
@@ -41,12 +42,81 @@ const AnimatedCounter = ({ value, duration = 1 }) => {
 
 const ClientDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [programs, setPrograms] = useState([]);
     const [metrics, setMetrics] = useState(null);
     const [analytics, setAnalytics] = useState(null);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [loading, setLoading] = useState(true);
+
+    // Calculate weekly goal progress
+    const calculateWeeklyGoal = () => {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const completedThisWeek = bookings.filter((b) => {
+            const bookingDate = new Date(b.booking_date);
+            return (
+                b.status === "completed" &&
+                bookingDate >= startOfWeek &&
+                bookingDate <= today
+            );
+        }).length;
+
+        const weeklyTarget = 5; // Target: 5 workouts per week
+        const progress = Math.min(
+            Math.round((completedThisWeek / weeklyTarget) * 100),
+            100
+        );
+
+        return { completedThisWeek, weeklyTarget, progress };
+    };
+
+    // Calculate activity streak
+    const calculateStreak = () => {
+        if (bookings.length === 0) return 0;
+
+        const completedBookings = bookings
+            .filter((b) => b.status === "completed")
+            .map((b) => new Date(b.booking_date).toISOString().split("T")[0])
+            .sort((a, b) => new Date(b) - new Date(a));
+
+        if (completedBookings.length === 0) return 0;
+
+        const uniqueDates = [...new Set(completedBookings)];
+        let streak = 0;
+        let currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+
+        // Check if there's activity today or yesterday
+        const lastActivityDate = new Date(uniqueDates[0]);
+        const daysDiff = Math.floor(
+            (currentDate - lastActivityDate) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysDiff > 1) return 0; // Streak broken
+
+        // Count consecutive days
+        for (let i = 0; i < uniqueDates.length; i++) {
+            const checkDate = new Date(currentDate);
+            checkDate.setDate(currentDate.getDate() - i);
+            const checkDateStr = checkDate.toISOString().split("T")[0];
+
+            if (uniqueDates.includes(checkDateStr)) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    };
+
+    const weeklyGoal = calculateWeeklyGoal();
+    const activityStreak = calculateStreak();
 
     useEffect(() => {
         loadDashboardData();
@@ -55,10 +125,11 @@ const ClientDashboard = () => {
 
     const loadNotifications = async () => {
         try {
+            if (!user?.id) return;
             const unreadCount = await notificationService.getUnreadCount(
                 user.id
             );
-            setUnreadNotifications(unreadCount.data.count);
+            setUnreadNotifications(unreadCount?.data?.count || 0);
         } catch (error) {
             console.error("Error loading notifications:", error);
         }
@@ -66,22 +137,27 @@ const ClientDashboard = () => {
 
     const loadDashboardData = async () => {
         try {
+            if (!user?.id) {
+                setLoading(false);
+                return;
+            }
+
             const [bookingsRes, programsRes, analyticsRes] = await Promise.all([
                 api.get("/bookings?limit=5"),
                 api.get("/programs?limit=3"),
                 api.get(`/analytics/client/${user.id}`),
             ]);
 
-            setBookings(bookingsRes.data || []);
-            setPrograms(programsRes.data || []);
-            setAnalytics(analyticsRes.data || {});
+            setBookings(bookingsRes?.data || []);
+            setPrograms(programsRes?.data || []);
+            setAnalytics(analyticsRes?.data || {});
 
             // Try to get latest metrics
             try {
                 const metricsRes = await api.get(
                     `/metrics/client/${user.id}/latest`
                 );
-                setMetrics(metricsRes.data);
+                setMetrics(metricsRes?.data);
             } catch (err) {
                 console.log("No metrics found");
             }
@@ -206,7 +282,7 @@ const ClientDashboard = () => {
                 className="space-y-2"
             >
                 <h1 className="text-4xl font-bold tracking-tight">
-                    Welcome back, {user.first_name}! 💪
+                    Welcome back, {user?.first_name || "User"}! 💪
                 </h1>
                 <p className="text-muted-foreground">
                     Here's your fitness overview for today
@@ -263,7 +339,10 @@ const ClientDashboard = () => {
                                         Your scheduled training sessions
                                     </CardDescription>
                                 </div>
-                                <Button className="gradient-orange">
+                                <Button
+                                    className="gradient-orange"
+                                    onClick={() => navigate("/bookings")}
+                                >
                                     <Calendar className="w-4 h-4 mr-2" />
                                     Book Session
                                 </Button>
@@ -285,7 +364,10 @@ const ClientDashboard = () => {
                                     <p className="text-muted-foreground mb-4">
                                         No upcoming sessions
                                     </p>
-                                    <Button className="gradient-orange">
+                                    <Button
+                                        className="gradient-orange"
+                                        onClick={() => navigate("/bookings")}
+                                    >
                                         Book Your First Session
                                     </Button>
                                 </div>
@@ -316,20 +398,29 @@ const ClientDashboard = () => {
                                         Progress
                                     </span>
                                     <span className="text-2xl font-bold text-fitness-orange">
-                                        65%
+                                        {weeklyGoal.progress}%
                                     </span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3">
                                     <div
                                         className="bg-gradient-to-r from-fitness-orange to-fitness-orange-light h-3 rounded-full transition-all duration-500"
-                                        style={{ width: "65%" }}
+                                        style={{
+                                            width: `${weeklyGoal.progress}%`,
+                                        }}
                                     ></div>
                                 </div>
                                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                    <span>3 of 5 workouts</span>
+                                    <span>
+                                        {weeklyGoal.completedThisWeek} of{" "}
+                                        {weeklyGoal.weeklyTarget} workouts
+                                    </span>
                                     <span className="flex items-center gap-1">
                                         <TrendingUp className="w-3 h-3" />
-                                        On track
+                                        {weeklyGoal.progress >= 80
+                                            ? "On track"
+                                            : weeklyGoal.progress >= 50
+                                            ? "Keep going"
+                                            : "Need more"}
                                     </span>
                                 </div>
                             </div>
@@ -347,10 +438,14 @@ const ClientDashboard = () => {
                         <CardContent>
                             <div className="text-center space-y-2">
                                 <div className="text-5xl font-bold text-fitness-green">
-                                    7
+                                    {activityStreak}
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    Days in a row! 🔥
+                                    {activityStreak === 0
+                                        ? "Start your streak!"
+                                        : activityStreak === 1
+                                        ? "Day streak! 🔥"
+                                        : "Days in a row! 🔥"}
                                 </p>
                             </div>
                         </CardContent>

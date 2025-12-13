@@ -50,13 +50,13 @@ const AdminDashboard = () => {
                 api.get("/users/gyms"),
             ]);
 
-            setUsers(usersRes.data || []);
-            setGyms(gymsRes.data || []);
+            setUsers(usersRes?.data || []);
+            setGyms(gymsRes?.data || []);
 
             // Calculate stats
             setStats({
-                totalUsers: usersRes.data?.length || 0,
-                totalGyms: gymsRes.data?.length || 0,
+                totalUsers: usersRes?.data?.length || 0,
+                totalGyms: gymsRes?.data?.length || 0,
                 totalBookings: 0, // Would come from analytics endpoint
                 totalRevenue: 0,
             });
