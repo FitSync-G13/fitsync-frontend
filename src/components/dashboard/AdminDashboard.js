@@ -25,6 +25,8 @@ import {
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Badge";
 import { Input } from "../ui/Input";
+import UserModal from "./UserModal";
+import GymModal from "./GymModal";
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
@@ -38,6 +40,13 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
     const [searchTerm, setSearchTerm] = useState("");
+
+    // Modal states
+    const [userModalOpen, setUserModalOpen] = useState(false);
+    const [gymModalOpen, setGymModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedGym, setSelectedGym] = useState(null);
+    const [modalMode, setModalMode] = useState("add"); // 'add' or 'edit'
 
     useEffect(() => {
         loadDashboardData();
@@ -64,6 +73,110 @@ const AdminDashboard = () => {
             console.error("Failed to load dashboard data:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // User Management Functions
+    const handleAddUser = () => {
+        setSelectedUser(null);
+        setModalMode("add");
+        setUserModalOpen(true);
+    };
+
+    const handleEditUser = (user) => {
+        setSelectedUser(user);
+        setModalMode("edit");
+        setUserModalOpen(true);
+    };
+
+    const handleDeleteUser = async (userId) => {
+        if (!window.confirm("Are you sure you want to delete this user?")) {
+            return;
+        }
+
+        try {
+            await api.delete(`/users/${userId}`);
+            // Reload data after successful deletion
+            await loadDashboardData();
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+            alert(
+                error.response?.data?.error?.message || "Failed to delete user"
+            );
+        }
+    };
+
+    const handleUserSubmit = async (userData) => {
+        try {
+            if (modalMode === "add") {
+                // For adding a new user, use the register endpoint
+                await api.post("/auth/register", userData);
+            } else if (modalMode === "edit" && selectedUser) {
+                // For editing, we can only update the user's role
+                // The backend doesn't have an admin endpoint to update all user fields
+                if (userData.role !== selectedUser.role) {
+                    await api.put(`/users/${selectedUser.id}/role`, {
+                        role: userData.role,
+                    });
+                }
+                // Note: first_name, last_name updates require backend support
+                // Users can update their own profiles via /users/me
+                if (
+                    userData.first_name !== selectedUser.first_name ||
+                    userData.last_name !== selectedUser.last_name
+                ) {
+                    console.warn(
+                        "Profile updates (name) are not supported through admin panel. User must update their own profile."
+                    );
+                }
+            }
+
+            // Reload data after successful save
+            await loadDashboardData();
+            setUserModalOpen(false);
+        } catch (error) {
+            console.error("Failed to save user:", error);
+            throw new Error(
+                error.response?.data?.error?.message || "Failed to save user"
+            );
+        }
+    };
+
+    // Gym Management Functions
+    const handleAddGym = () => {
+        setSelectedGym(null);
+        setModalMode("add");
+        setGymModalOpen(true);
+    };
+
+    const handleEditGym = (gym) => {
+        setSelectedGym(gym);
+        setModalMode("edit");
+        setGymModalOpen(true);
+    };
+
+    const handleGymSubmit = async (gymData) => {
+        try {
+            // Note: The backend currently only supports viewing gyms
+            // POST/PUT endpoints for gyms need to be added to the backend
+            alert(
+                "Gym management (add/edit) functionality requires backend API endpoints that are not yet implemented. Currently, you can only view gyms."
+            );
+            setGymModalOpen(false);
+
+            /* Uncomment when backend endpoints are ready:
+            if (mode === "add") {
+                await api.post("/users/gyms", gymData);
+            } else if (modalMode === "edit" && selectedGym) {
+                await api.put(`/users/gyms/${selectedGym.id}`, gymData);
+            }
+            await loadDashboardData();
+            */
+        } catch (error) {
+            console.error("Failed to save gym:", error);
+            throw new Error(
+                error.response?.data?.error?.message || "Failed to save gym"
+            );
         }
     };
 
@@ -292,7 +405,10 @@ const AdminDashboard = () => {
                                             }
                                         />
                                     </div>
-                                    <Button className="gradient-orange">
+                                    <Button
+                                        className="gradient-orange"
+                                        onClick={handleAddUser}
+                                    >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Add User
                                     </Button>
@@ -316,9 +432,6 @@ const AdminDashboard = () => {
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                                     Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                                    Actions
                                                 </th>
                                             </tr>
                                         </thead>
@@ -374,24 +487,6 @@ const AdminDashboard = () => {
                                                             Active
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <Edit className="w-4 h-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </td>
                                                 </motion.tr>
                                             ))}
                                         </tbody>
@@ -425,7 +520,10 @@ const AdminDashboard = () => {
                                         Manage registered gyms
                                     </CardDescription>
                                 </div>
-                                <Button className="gradient-orange">
+                                <Button
+                                    className="gradient-orange"
+                                    onClick={handleAddGym}
+                                >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Add Gym
                                 </Button>
@@ -463,6 +561,9 @@ const AdminDashboard = () => {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
+                                                    onClick={() =>
+                                                        handleEditGym(gym)
+                                                    }
                                                 >
                                                     Manage
                                                 </Button>
@@ -482,6 +583,22 @@ const AdminDashboard = () => {
                     </Card>
                 </motion.div>
             )}
+
+            {/* Modals */}
+            <UserModal
+                isOpen={userModalOpen}
+                onClose={() => setUserModalOpen(false)}
+                onSubmit={handleUserSubmit}
+                user={selectedUser}
+                mode={modalMode}
+            />
+            <GymModal
+                isOpen={gymModalOpen}
+                onClose={() => setGymModalOpen(false)}
+                onSubmit={handleGymSubmit}
+                gym={selectedGym}
+                mode={modalMode}
+            />
         </div>
     );
 };
