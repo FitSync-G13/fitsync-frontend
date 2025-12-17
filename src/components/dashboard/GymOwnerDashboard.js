@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Users,
     UserCheck,
@@ -14,6 +14,12 @@ import {
     Trash2,
     Award,
     Activity,
+    X,
+    Mail,
+    Phone,
+    MapPin,
+    Building2,
+    Briefcase,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -27,6 +33,7 @@ import {
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Badge } from "../ui/Badge";
+import UserModal from "./UserModal";
 
 const GymOwnerDashboard = () => {
     const { user } = useAuth();
@@ -41,6 +48,12 @@ const GymOwnerDashboard = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [userModalMode, setUserModalMode] = useState("add");
+    const [userModalRole, setUserModalRole] = useState("client");
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingUser, setViewingUser] = useState(null);
 
     useEffect(() => {
         loadDashboardData();
@@ -77,6 +90,53 @@ const GymOwnerDashboard = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleAddTrainer = () => {
+        setSelectedUser(null);
+        setUserModalMode("add");
+        setUserModalRole("trainer");
+        setIsUserModalOpen(true);
+    };
+
+    const handleAddMember = () => {
+        setSelectedUser(null);
+        setUserModalMode("add");
+        setUserModalRole("client");
+        setIsUserModalOpen(true);
+    };
+
+    const handleUserSubmit = async (userData) => {
+        try {
+            // Add gym_id from current gym owner
+            const dataWithGym = {
+                ...userData,
+                gym_id: user?.gym_id,
+                role: userModalRole,
+            };
+
+            if (userModalMode === "add") {
+                // Register new user
+                await api.post("/auth/register", dataWithGym);
+                alert(
+                    `${
+                        userModalRole === "trainer" ? "Trainer" : "Member"
+                    } added successfully!`
+                );
+            }
+
+            // Reload dashboard data
+            await loadDashboardData();
+            setIsUserModalOpen(false);
+        } catch (error) {
+            console.error("Failed to submit user:", error);
+            throw error;
+        }
+    };
+
+    const handleViewUser = (userData) => {
+        setViewingUser(userData);
+        setIsViewModalOpen(true);
     };
 
     const StatCard = ({ title, value, change, icon: Icon, trend }) => (
@@ -121,7 +181,7 @@ const GymOwnerDashboard = () => {
         </motion.div>
     );
 
-    const MemberRow = ({ member, type }) => (
+    const MemberRow = ({ member, type, onView }) => (
         <motion.tr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -162,23 +222,211 @@ const GymOwnerDashboard = () => {
             </td>
             <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="w-4 h-4" />
-                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        className="h-8 w-8"
+                        onClick={() => onView(member)}
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                     </Button>
                 </div>
             </td>
         </motion.tr>
     );
+
+    const UserDetailsModal = ({ isOpen, onClose, userData }) => {
+        if (!isOpen || !userData) return null;
+
+        return (
+            <AnimatePresence>
+                {isOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={onClose}
+                            className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+                        />
+
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full max-w-2xl"
+                            >
+                                <Card className="shadow-2xl">
+                                    <CardHeader className="border-b">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-fitness-orange to-fitness-orange-light flex items-center justify-center text-white font-bold text-2xl">
+                                                    {userData
+                                                        ?.first_name?.[0] ||
+                                                        "U"}
+                                                    {userData?.last_name?.[0] ||
+                                                        ""}
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-2xl">
+                                                        {userData?.first_name}{" "}
+                                                        {userData?.last_name}
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        <Badge
+                                                            variant={
+                                                                userData?.role ===
+                                                                "trainer"
+                                                                    ? "success"
+                                                                    : "outline"
+                                                            }
+                                                            className="mt-1"
+                                                        >
+                                                            {userData?.role ===
+                                                            "trainer"
+                                                                ? "Trainer"
+                                                                : "Member"}
+                                                        </Badge>
+                                                    </CardDescription>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={onClose}
+                                                className="h-8 w-8"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Email */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Mail className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Email
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm pl-6">
+                                                    {userData?.email || "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Phone */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Phone className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Phone
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm pl-6">
+                                                    {userData?.phone || "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Date of Birth */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Calendar className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Date of Birth
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm pl-6">
+                                                    {userData?.date_of_birth
+                                                        ? new Date(
+                                                              userData.date_of_birth
+                                                          ).toLocaleDateString()
+                                                        : "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Role */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Briefcase className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Role
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm pl-6 capitalize">
+                                                    {userData?.role || "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Gym ID */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Building2 className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Gym ID
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm pl-6 font-mono">
+                                                    {userData?.gym_id
+                                                        ? `#${userData.gym_id.slice(
+                                                              0,
+                                                              8
+                                                          )}`
+                                                        : "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Status */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <Activity className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        Status
+                                                    </span>
+                                                </div>
+                                                <div className="pl-6">
+                                                    <Badge
+                                                        variant={
+                                                            userData?.is_active
+                                                                ? "success"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        {userData?.is_active
+                                                            ? "Active"
+                                                            : "Inactive"}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* User ID */}
+                                        <div className="mt-6 pt-6 border-t">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                    <UserCheck className="w-4 h-4" />
+                                                    <span className="text-sm font-medium">
+                                                        User ID
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs pl-6 font-mono text-muted-foreground">
+                                                    {userData?.id || "N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+        );
+    };
 
     if (loading) {
         return (
@@ -388,7 +636,10 @@ const GymOwnerDashboard = () => {
                                         }
                                     />
                                 </div>
-                                <Button className="gradient-orange">
+                                <Button
+                                    className="gradient-orange"
+                                    onClick={handleAddTrainer}
+                                >
                                     <Users className="w-4 h-4 mr-2" />
                                     Add Trainer
                                 </Button>
@@ -421,6 +672,7 @@ const GymOwnerDashboard = () => {
                                                 key={trainer.id}
                                                 member={trainer}
                                                 type="trainer"
+                                                onView={handleViewUser}
                                             />
                                         ))}
                                     </tbody>
@@ -453,7 +705,10 @@ const GymOwnerDashboard = () => {
                                     View and manage gym members
                                 </CardDescription>
                             </div>
-                            <Button className="gradient-orange">
+                            <Button
+                                className="gradient-orange"
+                                onClick={handleAddMember}
+                            >
                                 <Users className="w-4 h-4 mr-2" />
                                 Add Member
                             </Button>
@@ -485,6 +740,7 @@ const GymOwnerDashboard = () => {
                                                 key={client.id}
                                                 member={client}
                                                 type="client"
+                                                onView={handleViewUser}
                                             />
                                         ))}
                                     </tbody>
@@ -501,6 +757,26 @@ const GymOwnerDashboard = () => {
                     </CardContent>
                 </Card>
             </motion.div>
+
+            {/* User Modal */}
+            <UserModal
+                isOpen={isUserModalOpen}
+                onClose={() => setIsUserModalOpen(false)}
+                onSubmit={handleUserSubmit}
+                user={selectedUser}
+                mode={userModalMode}
+                initialRole={userModalRole}
+                initialGymId={user?.gym_id}
+                disableGymSelect={true}
+                disableRoleSelect={true}
+            />
+
+            {/* User Details Modal */}
+            <UserDetailsModal
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                userData={viewingUser}
+            />
         </div>
     );
 };

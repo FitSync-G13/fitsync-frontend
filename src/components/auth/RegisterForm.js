@@ -10,6 +10,8 @@ import {
     ArrowRight,
     AlertCircle,
     Briefcase,
+    Phone,
+    Calendar,
 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -28,6 +30,8 @@ const RegisterForm = () => {
         email: "",
         password: "",
         confirmPassword: "",
+        phone: "",
+        date_of_birth: "",
         role: "client",
     });
     const [loading, setLoading] = useState(false);
@@ -304,6 +308,47 @@ const RegisterForm = () => {
                                         disabled={loading}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Phone Number
+                                </label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                    <Input
+                                        type="tel"
+                                        name="phone"
+                                        placeholder="+1234567890"
+                                        className="pl-10"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Optional - Format: +1234567890
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Date of Birth
+                                </label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                    <Input
+                                        type="date"
+                                        name="date_of_birth"
+                                        className="pl-10"
+                                        value={formData.date_of_birth}
+                                        onChange={handleChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Optional
+                                </p>
                             </div>
 
                             <Button

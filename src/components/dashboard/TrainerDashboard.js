@@ -30,6 +30,7 @@ const TrainerDashboard = () => {
     const [bookings, setBookings] = useState([]);
     const [programs, setPrograms] = useState([]);
     const [workouts, setWorkouts] = useState([]);
+    const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -38,20 +39,30 @@ const TrainerDashboard = () => {
 
     const loadDashboardData = async () => {
         try {
-            const [bookingsRes, programsRes, workoutsRes] = await Promise.all([
-                api.get("/bookings?limit=10"),
-                api.get("/programs?limit=5"),
-                api.get("/workouts?limit=5"),
-            ]);
+            const [bookingsRes, programsRes, workoutsRes, clientsRes] =
+                await Promise.all([
+                    api.get("/bookings?limit=10"),
+                    api.get("/programs?limit=5"),
+                    api.get("/workouts?limit=5"),
+                    api.get("/users?role=client&limit=100"),
+                ]);
 
             setBookings(bookingsRes?.data || []);
             setPrograms(programsRes?.data || []);
             setWorkouts(workoutsRes?.data || []);
+            setClients(clientsRes?.data || []);
         } catch (error) {
             console.error("Failed to load dashboard data:", error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const getClientName = (clientId) => {
+        const client = clients.find((c) => c.id === clientId);
+        return client
+            ? `${client.first_name} ${client.last_name}`
+            : `Client #${clientId?.slice(0, 8)}`;
     };
 
     const todaysBookings = bookings.filter((b) => {
@@ -179,10 +190,8 @@ const TrainerDashboard = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-semibold">
-                                                        Client #
-                                                        {booking.client_id.slice(
-                                                            0,
-                                                            8
+                                                        {getClientName(
+                                                            booking.client_id
                                                         )}
                                                     </h4>
                                                     <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
@@ -256,10 +265,9 @@ const TrainerDashboard = () => {
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <h4 className="font-semibold">
-                                                    Program for Client #
-                                                    {program.client_id.slice(
-                                                        0,
-                                                        8
+                                                    Program for{" "}
+                                                    {getClientName(
+                                                        program.client_id
                                                     )}
                                                 </h4>
                                                 <Badge

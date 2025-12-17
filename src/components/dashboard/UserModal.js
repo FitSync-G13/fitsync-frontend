@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Mail, Lock, Briefcase, AlertCircle } from "lucide-react";
+import {
+    X,
+    User,
+    Mail,
+    Lock,
+    Briefcase,
+    AlertCircle,
+    Phone,
+    Calendar,
+    Building2,
+} from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import api from "../../services/api";
 
 const UserModal = ({
     isOpen,
@@ -11,16 +22,45 @@ const UserModal = ({
     onSubmit,
     user = null,
     mode = "add",
+    initialRole = null,
+    initialGymId = null,
+    disableGymSelect = false,
+    disableRoleSelect = false,
 }) => {
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
         email: "",
         password: "",
+        phone: "",
+        date_of_birth: "",
+        gym_id: "",
         role: "client",
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [gyms, setGyms] = useState([]);
+    const [loadingGyms, setLoadingGyms] = useState(false);
+
+    // Fetch gyms when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            loadGyms();
+        }
+    }, [isOpen]);
+
+    const loadGyms = async () => {
+        setLoadingGyms(true);
+        try {
+            const response = await api.get("/users/gyms");
+            setGyms(response?.data || []);
+        } catch (error) {
+            console.error("Failed to load gyms:", error);
+            setGyms([]);
+        } finally {
+            setLoadingGyms(false);
+        }
+    };
 
     useEffect(() => {
         if (user && mode === "edit") {
@@ -28,7 +68,12 @@ const UserModal = ({
                 first_name: user.first_name || "",
                 last_name: user.last_name || "",
                 email: user.email || "",
-                role: user.role || "client",
+                phone: user.phone || "",
+                date_of_birth: user.date_of_birth
+                    ? user.date_of_birth.split("T")[0]
+                    : "",
+                gym_id: user.gym_id || initialGymId || "",
+                role: user.role || initialRole || "client",
                 password: "", // Don't populate password for edit
             });
         } else {
@@ -37,11 +82,14 @@ const UserModal = ({
                 last_name: "",
                 email: "",
                 password: "",
-                role: "client",
+                phone: "",
+                date_of_birth: "",
+                gym_id: initialGymId || "",
+                role: initialRole || "client",
             });
         }
         setError("");
-    }, [user, mode, isOpen]);
+    }, [user, mode, isOpen, initialRole, initialGymId]);
 
     const handleChange = (e) => {
         setFormData({
@@ -86,14 +134,14 @@ const UserModal = ({
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                 />
 
                 {/* Modal */}
@@ -101,10 +149,10 @@ const UserModal = ({
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative z-10 w-full max-w-2xl"
+                    className="relative z-10 w-full max-w-2xl my-8"
                 >
-                    <Card>
-                        <CardHeader>
+                    <Card className="rounded-xl shadow-2xl max-h-[90vh] flex flex-col">
+                        <CardHeader className="flex-shrink-0">
                             <div className="flex items-center justify-between">
                                 <CardTitle>
                                     {mode === "add"
@@ -121,7 +169,7 @@ const UserModal = ({
                                 </Button>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="overflow-y-auto flex-1">
                             {error && (
                                 <motion.div
                                     initial={{ opacity: 0, x: -20 }}
@@ -240,6 +288,93 @@ const UserModal = ({
                                     </div>
                                 )}
 
+                                {/* Phone */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Phone Number
+                                    </label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <Input
+                                            type="tel"
+                                            name="phone"
+                                            placeholder="+1234567890"
+                                            className="pl-10"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Optional - Format: +1234567890
+                                    </p>
+                                </div>
+
+                                {/* Date of Birth */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Date of Birth
+                                    </label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <Input
+                                            type="date"
+                                            name="date_of_birth"
+                                            className="pl-10"
+                                            value={formData.date_of_birth}
+                                            onChange={handleChange}
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Optional
+                                    </p>
+                                </div>
+
+                                {/* Gym Selection */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Gym
+                                    </label>
+                                    <div className="relative">
+                                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <select
+                                            name="gym_id"
+                                            value={formData.gym_id}
+                                            onChange={handleChange}
+                                            className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-fitness-orange"
+                                            disabled={
+                                                loading ||
+                                                loadingGyms ||
+                                                disableGymSelect
+                                            }
+                                        >
+                                            <option value="">
+                                                No gym assigned
+                                            </option>
+                                            {loadingGyms ? (
+                                                <option value="">
+                                                    Loading gyms...
+                                                </option>
+                                            ) : (
+                                                gyms.map((gym) => (
+                                                    <option
+                                                        key={gym.id}
+                                                        value={gym.id}
+                                                    >
+                                                        {gym.name} -{" "}
+                                                        {gym.address?.city ||
+                                                            "N/A"}
+                                                    </option>
+                                                ))
+                                            )}
+                                        </select>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Optional - Assign user to a specific gym
+                                    </p>
+                                </div>
+
                                 {/* Role */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">
@@ -253,7 +388,9 @@ const UserModal = ({
                                             onChange={handleChange}
                                             className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-fitness-orange"
                                             required
-                                            disabled={loading}
+                                            disabled={
+                                                loading || disableRoleSelect
+                                            }
                                         >
                                             <option value="client">
                                                 Client

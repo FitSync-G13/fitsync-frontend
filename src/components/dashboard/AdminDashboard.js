@@ -428,6 +428,9 @@ const AdminDashboard = () => {
                                                     Email
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                                    Phone
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                                     Role
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -469,6 +472,9 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-muted-foreground">
                                                         {user.email}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                                                        {user.phone || "N/A"}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <Badge
