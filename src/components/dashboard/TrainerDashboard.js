@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Calendar,
@@ -25,6 +26,7 @@ import { Badge } from "../ui/Badge";
 
 const TrainerDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [programs, setPrograms] = useState([]);
     const [workouts, setWorkouts] = useState([]);
@@ -42,9 +44,9 @@ const TrainerDashboard = () => {
                 api.get("/workouts?limit=5"),
             ]);
 
-            setBookings(bookingsRes.data || []);
-            setPrograms(programsRes.data || []);
-            setWorkouts(workoutsRes.data || []);
+            setBookings(bookingsRes?.data || []);
+            setPrograms(programsRes?.data || []);
+            setWorkouts(workoutsRes?.data || []);
         } catch (error) {
             console.error("Failed to load dashboard data:", error);
         } finally {
@@ -54,7 +56,7 @@ const TrainerDashboard = () => {
 
     const todaysBookings = bookings.filter((b) => {
         const today = new Date().toISOString().split("T")[0];
-        return b.booking_date === today && b.status === "scheduled";
+        return b?.booking_date === today && b?.status === "scheduled";
     });
 
     const StatCard = ({ title, value, icon: Icon, gradient }) => (
@@ -310,7 +312,10 @@ const TrainerDashboard = () => {
                                         Your custom workout templates
                                     </CardDescription>
                                 </div>
-                                <Button className="gradient-orange">
+                                <Button
+                                    className="gradient-orange"
+                                    onClick={() => navigate("/workouts")}
+                                >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create
                                 </Button>

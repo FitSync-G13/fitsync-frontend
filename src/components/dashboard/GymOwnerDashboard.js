@@ -53,22 +53,23 @@ const GymOwnerDashboard = () => {
                 api.get("/bookings?limit=20"),
             ]);
 
-            const allUsers = usersRes.data || [];
+            const allUsers = usersRes?.data || [];
+            const userGymId = user?.gym_id;
             const trainersData = allUsers.filter(
-                (u) => u.role === "trainer" && u.gym_id === user.gym_id
+                (u) => u?.role === "trainer" && u?.gym_id === userGymId
             );
             const clientsData = allUsers.filter(
-                (u) => u.role === "client" && u.gym_id === user.gym_id
+                (u) => u?.role === "client" && u?.gym_id === userGymId
             );
 
             setTrainers(trainersData);
             setClients(clientsData);
-            setBookings(bookingsRes.data || []);
+            setBookings(bookingsRes?.data || []);
 
             setStats({
                 totalTrainers: trainersData.length,
                 totalClients: clientsData.length,
-                totalBookings: bookingsRes.data?.length || 0,
+                totalBookings: bookingsRes?.data?.length || 0,
                 revenue: 0, // Calculate based on bookings
             });
         } catch (error) {
@@ -129,21 +130,21 @@ const GymOwnerDashboard = () => {
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-fitness-orange to-fitness-orange-light flex items-center justify-center text-white font-semibold">
-                        {member.first_name?.[0]}
-                        {member.last_name?.[0]}
+                        {member?.first_name?.[0] || "U"}
+                        {member?.last_name?.[0] || ""}
                     </div>
                     <div>
                         <div className="font-medium">
-                            {member.first_name} {member.last_name}
+                            {member?.first_name || ""} {member?.last_name || ""}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                            {member.email}
+                            {member?.email || "N/A"}
                         </div>
                     </div>
                 </div>
             </td>
             <td className="px-6 py-4 text-sm text-muted-foreground">
-                {member.phone || "N/A"}
+                {member?.phone || "N/A"}
             </td>
             <td className="px-6 py-4">
                 {type === "trainer" && (
@@ -221,29 +222,21 @@ const GymOwnerDashboard = () => {
                 <StatCard
                     title="Total Members"
                     value={stats.totalClients}
-                    change="+12%"
-                    trend="up"
                     icon={Users}
                 />
                 <StatCard
                     title="Active Trainers"
                     value={stats.totalTrainers}
-                    change="+3%"
-                    trend="up"
                     icon={UserCheck}
                 />
                 <StatCard
                     title="Total Bookings"
                     value={stats.totalBookings}
-                    change="+8%"
-                    trend="up"
                     icon={Calendar}
                 />
                 <StatCard
                     title="Monthly Revenue"
                     value={`$${stats.revenue}`}
-                    change="+23%"
-                    trend="up"
                     icon={DollarSign}
                 />
             </div>
@@ -299,13 +292,36 @@ const GymOwnerDashboard = () => {
                                         Progress
                                     </span>
                                     <span className="text-2xl font-bold">
-                                        75%
+                                        {stats.totalClients > 0
+                                            ? Math.min(
+                                                  Math.round(
+                                                      (stats.totalClients /
+                                                          200) *
+                                                          100
+                                                  ),
+                                                  100
+                                              )
+                                            : 0}
+                                        %
                                     </span>
                                 </div>
                                 <div className="w-full bg-muted rounded-full h-3">
                                     <div
                                         className="bg-gradient-to-r from-fitness-orange to-fitness-orange-light h-3 rounded-full"
-                                        style={{ width: "75%" }}
+                                        style={{
+                                            width: `${
+                                                stats.totalClients > 0
+                                                    ? Math.min(
+                                                          Math.round(
+                                                              (stats.totalClients /
+                                                                  200) *
+                                                                  100
+                                                          ),
+                                                          100
+                                                      )
+                                                    : 0
+                                            }%`,
+                                        }}
                                     ></div>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
@@ -322,15 +338,22 @@ const GymOwnerDashboard = () => {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Today's Visitors</CardTitle>
+                            <CardTitle>Today's Bookings</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-center space-y-2">
                                 <div className="text-4xl font-bold text-fitness-orange">
-                                    156
+                                    {
+                                        bookings.filter((b) => {
+                                            const today = new Date()
+                                                .toISOString()
+                                                .split("T")[0];
+                                            return b?.booking_date === today;
+                                        }).length
+                                    }
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    +18% from yesterday
+                                    Scheduled for today
                                 </p>
                             </div>
                         </CardContent>

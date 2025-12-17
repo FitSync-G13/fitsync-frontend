@@ -23,7 +23,8 @@ import {
 
 const RegisterForm = () => {
     const [formData, setFormData] = useState({
-        name: "",
+        first_name: "",
+        last_name: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -52,8 +53,8 @@ const RegisterForm = () => {
             return;
         }
 
-        if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters long");
+        if (formData.password.length < 8) {
+            setError("Password must be at least 8 characters long");
             return;
         }
 
@@ -208,22 +209,43 @@ const RegisterForm = () => {
 
                         {/* Register Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">
-                                    Full Name
-                                </label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                                    <Input
-                                        type="text"
-                                        name="name"
-                                        placeholder="John Doe"
-                                        className="pl-10"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={loading}
-                                    />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        First Name
+                                    </label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            name="first_name"
+                                            placeholder="John"
+                                            className="pl-10"
+                                            value={formData.first_name}
+                                            onChange={handleChange}
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Last Name
+                                    </label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            name="last_name"
+                                            placeholder="Doe"
+                                            className="pl-10"
+                                            value={formData.last_name}
+                                            onChange={handleChange}
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
