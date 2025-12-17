@@ -22,6 +22,10 @@ const UserModal = ({
     onSubmit,
     user = null,
     mode = "add",
+    initialRole = null,
+    initialGymId = null,
+    disableGymSelect = false,
+    disableRoleSelect = false,
 }) => {
     const [formData, setFormData] = useState({
         first_name: "",
@@ -68,8 +72,8 @@ const UserModal = ({
                 date_of_birth: user.date_of_birth
                     ? user.date_of_birth.split("T")[0]
                     : "",
-                gym_id: user.gym_id || "",
-                role: user.role || "client",
+                gym_id: user.gym_id || initialGymId || "",
+                role: user.role || initialRole || "client",
                 password: "", // Don't populate password for edit
             });
         } else {
@@ -80,12 +84,12 @@ const UserModal = ({
                 password: "",
                 phone: "",
                 date_of_birth: "",
-                gym_id: "",
-                role: "client",
+                gym_id: initialGymId || "",
+                role: initialRole || "client",
             });
         }
         setError("");
-    }, [user, mode, isOpen]);
+    }, [user, mode, isOpen, initialRole, initialGymId]);
 
     const handleChange = (e) => {
         setFormData({
@@ -339,7 +343,11 @@ const UserModal = ({
                                             value={formData.gym_id}
                                             onChange={handleChange}
                                             className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-fitness-orange"
-                                            disabled={loading || loadingGyms}
+                                            disabled={
+                                                loading ||
+                                                loadingGyms ||
+                                                disableGymSelect
+                                            }
                                         >
                                             <option value="">
                                                 No gym assigned
@@ -380,7 +388,9 @@ const UserModal = ({
                                             onChange={handleChange}
                                             className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-fitness-orange"
                                             required
-                                            disabled={loading}
+                                            disabled={
+                                                loading || disableRoleSelect
+                                            }
                                         >
                                             <option value="client">
                                                 Client
